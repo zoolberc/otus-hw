@@ -8,9 +8,9 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-func Unpack(InputWord string) (string, error) {
+func Unpack(inputWord string) (string, error) {
 	var result strings.Builder
-	inputWordRune := []rune(InputWord)
+	inputWordRune := []rune(inputWord)
 	if len(inputWordRune) == 0 {
 		return "", nil
 	}
@@ -28,7 +28,6 @@ func Unpack(InputWord string) (string, error) {
 					result.WriteString(preValue)
 				}
 				result.WriteString(string(s))
-
 			} else {
 				_, err := strconv.Atoi(preValue)
 				if err == nil {
@@ -37,7 +36,6 @@ func Unpack(InputWord string) (string, error) {
 					result.WriteString(preValue)
 					preValue = string(s)
 				}
-
 			}
 		} else {
 			_, err := strconv.Atoi(preValue)
@@ -48,8 +46,6 @@ func Unpack(InputWord string) (string, error) {
 				return "", ErrInvalidString
 			}
 		}
-
 	}
-
 	return result.String(), nil
 }
