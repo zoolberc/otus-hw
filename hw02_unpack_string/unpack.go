@@ -10,41 +10,32 @@ var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(inputWord string) (string, error) {
 	var result strings.Builder
-	inputWordRune := []rune(inputWord)
-	if len(inputWordRune) == 0 {
+	if inputWord == "" {
 		return "", nil
 	}
-	preValue := ""
-	_, err := strconv.Atoi(string(inputWordRune[0]))
+	_, err := strconv.Atoi(string(inputWord[0]))
 	if err == nil {
 		return "", ErrInvalidString
 	}
-	for i, s := range inputWordRune {
+	preValue := ""
+	lenInputWord := len([]rune(inputWord))
+	for i, s := range inputWord {
 		curr, err := strconv.Atoi(string(s))
+		_, errConvPreValue := strconv.Atoi(preValue)
 		if err != nil {
-			if i == len(inputWordRune)-1 {
-				_, err := strconv.Atoi(preValue)
-				if err != nil {
-					result.WriteString(preValue)
-				}
-				result.WriteString(string(s))
-			} else {
-				_, err := strconv.Atoi(preValue)
-				if err == nil {
-					preValue = string(s)
-				} else {
-					result.WriteString(preValue)
-					preValue = string(s)
-				}
+			if errConvPreValue != nil {
+				result.WriteString(preValue)
 			}
+			if i == lenInputWord-1 {
+				result.WriteString(string(s))
+			}
+			preValue = string(s)
 		} else {
-			_, err := strconv.Atoi(preValue)
-			if err != nil {
-				result.WriteString(strings.Repeat(preValue, curr))
-				preValue = string(s)
-			} else {
+			if errConvPreValue == nil {
 				return "", ErrInvalidString
 			}
+			result.WriteString(strings.Repeat(preValue, curr))
+			preValue = string(s)
 		}
 	}
 	return result.String(), nil
