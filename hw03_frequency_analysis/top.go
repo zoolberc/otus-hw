@@ -12,16 +12,11 @@ func Top10(inputText string) []string {
 	allWords := strings.Fields(inputText)
 	wordsMap := make(map[string]int)
 	for _, word := range allWords {
-		_, ok := wordsMap[word]
-		if !ok {
-			wordsMap[word] = 1
-		}
 		wordsMap[word]++
 	}
-	tempSliceOfNotSortedWords := getSortedSliceFromMap(wordsMap)[:10]
+	tempSliceOfNotSortedWords := getSliceFromMap(wordsMap)[:10]
 	tempSlice := make([]string, 0)
 	result := make([]string, 0)
-
 	for i, k := range tempSliceOfNotSortedWords {
 		if len(tempSlice) == 0 && i == len(tempSliceOfNotSortedWords)-1 {
 			result = append(result, k)
@@ -50,7 +45,7 @@ func Top10(inputText string) []string {
 	return result
 }
 
-func getSortedSliceFromMap(inputMap map[string]int) []string {
+func getSliceFromMap(inputMap map[string]int) []string {
 	results := make([]string, 0, len(inputMap))
 	for key := range inputMap {
 		results = append(results, key)
