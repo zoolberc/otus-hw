@@ -1,9 +1,8 @@
 package hw03frequencyanalysis
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // Change to true if needed.
