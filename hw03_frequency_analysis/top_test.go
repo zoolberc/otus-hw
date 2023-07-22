@@ -43,11 +43,47 @@ var text = `Как видите, он  спускается  по  лестни�
 	посидеть у огня и послушать какую-нибудь интересную сказку.
 		В этот вечер...`
 
+var differentWords = `Yesterday I went for a walk в парке.
+	The weather было прекрасным, so I decided to enjoy the sunshine и свежий воздух.
+	Я наслаждался красивыми цветами и зелеными деревьями.
+	Suddenly, я увидел a cute little dog, который бежал ко мне.
+	Я подошел к нему и погладил его по голове.
+	Он был таким дружелюбным и игривым! Мы провели вместе некоторое время, играя и бегая вокруг.
+	It was a wonderful experience!`
+
+var nineWords = `Я пошел в магазин, чтобы купить продукты.`
+
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
 		require.Len(t, Top10(""), 0)
 	})
-
+	t.Run("words in two languages", func(t *testing.T) {
+		expected := []string{
+			"и",         // 5
+			"a",         // 3
+			"I",         // 2
+			"Я",         // 2
+			"It",        // 1
+			"Suddenly,", // 1
+			"The",       // 1
+			"Yesterday", // 1
+			"cute",      // 1
+			"decided",   // 4
+		}
+		require.Equal(t, expected, Top10(differentWords))
+	})
+	t.Run("9 words in text", func(t *testing.T) {
+		expected := []string{
+			"Я",         // 1
+			"в",         // 1
+			"купить",    // 1
+			"магазин,",  // 1
+			"пошел",     // 1
+			"продукты.", // 1
+			"чтобы",     // 1
+		}
+		require.Equal(t, expected, Top10(nineWords))
+	})
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{
