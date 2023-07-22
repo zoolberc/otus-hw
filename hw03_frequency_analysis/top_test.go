@@ -51,7 +51,7 @@ var differentWords = `Yesterday I went for a walk в парке.
 	Он был таким дружелюбным и игривым! Мы провели вместе некоторое время, играя и бегая вокруг.
 	It was a wonderful experience!`
 
-var nineWords = `Я пошел в магазин, чтобы купить продукты.`
+var sevenWords = `Я пошел в магазин, чтобы купить продукты.`
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestTop10(t *testing.T) {
 		}
 		require.Equal(t, expected, Top10(differentWords))
 	})
-	t.Run("9 words in text", func(t *testing.T) {
+	t.Run("7 words in text", func(t *testing.T) {
 		expected := []string{
 			"Я",         // 1
 			"в",         // 1
@@ -82,7 +82,7 @@ func TestTop10(t *testing.T) {
 			"продукты.", // 1
 			"чтобы",     // 1
 		}
-		require.Equal(t, expected, Top10(nineWords))
+		require.Equal(t, expected, Top10(sevenWords))
 	})
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
