@@ -76,14 +76,16 @@ func (l *list) PushBack(v interface{}) *ListItem {
 	l.items[element] = struct{}{}
 	return element
 }
+
 func (l *list) Remove(i *ListItem) {
-	if i == l.tail {
+	switch i {
+	case l.tail:
 		l.tail = i.Prev
 		l.tail.Next = nil
-	} else if i == l.head {
+	case l.head:
 		l.head = i.Next
 		l.head.Prev = nil
-	} else {
+	default:
 		i.Prev.Next = i.Next
 		i.Next.Prev = i.Prev
 	}
