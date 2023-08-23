@@ -20,6 +20,39 @@ func TestCache(t *testing.T) {
 		require.False(t, ok)
 	})
 
+	t.Run("Removing the first element from the queue", func(t *testing.T) {
+		c := NewCache(3)
+		c.Set("First", 1)
+		c.Set("Second", 2)
+		c.Set("Third", 3)
+		c.Set("Fourth", 4)
+
+		_, ok := c.Get("First")
+		require.False(t, ok)
+	})
+
+	t.Run("Removing an infrequently used element from the queue", func(t *testing.T) {
+		c := NewCache(5)
+		c.Set("First", 1)
+		c.Set("Second", 2)
+		c.Set("Third", 3)
+		c.Set("Fourth", 4)
+		c.Set("Fifth", 5)
+
+		c.Set("Fifth", 7)
+		c.Get("First")
+		c.Get("Second")
+		c.Get("Third")
+		c.Get("Fourth")
+		c.Get("Third")
+		c.Get("Second")
+
+		c.Set("Sixth", 6)
+
+		_, ok := c.Get("Fifth")
+		require.False(t, ok)
+	})
+
 	t.Run("simple", func(t *testing.T) {
 		c := NewCache(5)
 

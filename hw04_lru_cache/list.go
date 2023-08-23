@@ -18,9 +18,9 @@ type ListItem struct {
 }
 
 type list struct {
-	items map[*ListItem]struct{}
-	head  *ListItem
-	tail  *ListItem
+	listLen int
+	head    *ListItem
+	tail    *ListItem
 }
 
 func NewList() List {
@@ -28,11 +28,11 @@ func NewList() List {
 }
 
 func (l *list) Len() int {
-	return len(l.items)
+	return l.listLen
 }
 
 func (l *list) Front() *ListItem {
-	if l.items == nil {
+	if l.listLen == 0 {
 		return nil
 	}
 	return l.head
@@ -47,33 +47,31 @@ func (l *list) Back() *ListItem {
 
 func (l *list) PushFront(v interface{}) *ListItem {
 	element := &ListItem{Value: v}
-	if l.items == nil {
+	if l.listLen == 0 {
 		l.head = element
 		l.tail = element
-		l.items = make(map[*ListItem]struct{})
-		l.items[element] = struct{}{}
+		l.listLen++
 		return element
 	}
 	element.Next = l.head
 	l.head.Prev = element
 	l.head = element
-	l.items[element] = struct{}{}
+	l.listLen++
 	return element
 }
 
 func (l *list) PushBack(v interface{}) *ListItem {
 	element := &ListItem{Value: v}
-	if l.items == nil {
+	if l.listLen == 0 {
 		l.head = element
 		l.tail = element
-		l.items = make(map[*ListItem]struct{})
-		l.items[element] = struct{}{}
+		l.listLen++
 		return element
 	}
 	element.Prev = l.tail
 	l.tail.Next = element
 	l.tail = element
-	l.items[element] = struct{}{}
+	l.listLen++
 	return element
 }
 
@@ -89,23 +87,21 @@ func (l *list) Remove(i *ListItem) {
 		i.Prev.Next = i.Next
 		i.Next.Prev = i.Prev
 	}
-	delete(l.items, i)
+	l.listLen--
 }
 
 func (l *list) MoveToFront(i *ListItem) {
 	if i == l.head {
 		return
 	}
-	if _, ok := l.items[i]; !ok {
-		return
-	}
 	i.Prev.Next = i.Next
-	if i != l.tail {
+	if i.Next != nil {
 		i.Next.Prev = i.Prev
 	}
 	i.Next = l.head
-	i.Prev = nil
-
-	l.head.Prev = i
+	i.Prev, l.head.Prev = l.head.Prev, i.Prev
+	if i == l.tail {
+		l.tail = l.head
+	}
 	l.head = i
 }
