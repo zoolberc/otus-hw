@@ -2,14 +2,50 @@ package hw05parallelexecution
 
 import (
 	"errors"
+	"sync"
+	"sync/atomic"
 )
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
 type Task func() error
 
-// Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
-func Run(tasks []Task, n, m int) error {
-	// Place your code here.
+func Run(tasks []Task, goroutinesCount, maxErrors int) error {
+	if maxErrors <= 0 {
+		return ErrErrorsLimitExceeded
+	}
+	taskChan := make(chan Task, len(tasks))
+	for _, t := range tasks {
+		taskChan <- t
+	}
+	close(taskChan)
+	var errorsCount int32
+
+	wg := &sync.WaitGroup{}
+	wg.Add(goroutinesCount)
+
+	for i := 0; i < goroutinesCount; i++ {
+		go func() {
+			defer wg.Done()
+			worker(&errorsCount, int32(maxErrors), taskChan)
+		}()
+	}
+	wg.Wait()
+	if errorsCount > int32(maxErrors) {
+		return ErrErrorsLimitExceeded
+	}
 	return nil
+}
+
+func worker(errorsCount *int32, maxErrors int32, taskChan chan Task) {
+	for atomic.LoadInt32(errorsCount) < maxErrors {
+		task, ok := <-taskChan
+		if !ok {
+			return
+		}
+		err := task()
+		if err != nil {
+			atomic.AddInt32(errorsCount, 1)
+		}
+	}
 }
