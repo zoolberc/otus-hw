@@ -15,15 +15,14 @@ func Run(tasks []Task, goroutinesCount, maxErrors int) error {
 		return ErrErrorsLimitExceeded
 	}
 	taskChan := make(chan Task, len(tasks))
-
-	wg := &sync.WaitGroup{}
-	wg.Add(goroutinesCount)
-
 	for _, t := range tasks {
 		taskChan <- t
 	}
 	close(taskChan)
 	var errorsCount int32
+
+	wg := &sync.WaitGroup{}
+	wg.Add(goroutinesCount)
 
 	for i := 0; i < goroutinesCount; i++ {
 		go worker(&errorsCount, int32(maxErrors), wg, taskChan)
