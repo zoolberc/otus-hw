@@ -25,7 +25,10 @@ func Run(tasks []Task, goroutinesCount, maxErrors int) error {
 	wg.Add(goroutinesCount)
 
 	for i := 0; i < goroutinesCount; i++ {
-		go worker(&errorsCount, int32(maxErrors), wg, taskChan)
+		go func() {
+			defer wg.Done()
+			worker(&errorsCount, int32(maxErrors), taskChan)
+		}()
 	}
 	wg.Wait()
 	if errorsCount > int32(maxErrors) {
@@ -34,8 +37,7 @@ func Run(tasks []Task, goroutinesCount, maxErrors int) error {
 	return nil
 }
 
-func worker(errorsCount *int32, maxErrors int32, wg *sync.WaitGroup, taskChan chan Task) {
-	defer wg.Done()
+func worker(errorsCount *int32, maxErrors int32, taskChan chan Task) {
 	for atomic.LoadInt32(errorsCount) < maxErrors {
 		task, ok := <-taskChan
 		if !ok {
