@@ -16,7 +16,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 }
 
 func doneControl(in In, done In) Out {
-
 	outChan := make(Bi)
 
 	go func() {
@@ -25,7 +24,7 @@ func doneControl(in In, done In) Out {
 			select {
 			case v, ok := <-in:
 				if !ok {
-					return //больше элементов в канале нет
+					return // больше элементов в канале нет
 				}
 				outChan <- v
 			case <-done:
