@@ -10,7 +10,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	if len(cmd) < 1 {
 		return -1
 	}
-	command := exec.Command(cmd[0], cmd[1:]...)
+	command := exec.Command(cmd[0], cmd[1:]...) //nolint:gosec
 	envs := updateEnv(env)
 	command.Env = append(os.Environ(), envs...)
 	command.Stderr = os.Stderr
