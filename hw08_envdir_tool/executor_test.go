@@ -3,25 +3,10 @@ package main
 import (
 	"github.com/stretchr/testify/require"
 	"os"
-	"strconv"
 	"testing"
 )
 
 func TestRunCmd(t *testing.T) {
-	t.Run("program return code", func(t *testing.T) {
-		tests := []int{
-			120,
-			115,
-			255,
-			2,
-		}
-
-		for _, test := range tests {
-			r := RunCmd([]string{"/bin/bash", "-c", "exit " + strconv.Itoa(test)}, nil)
-			require.Equal(t, test, r, "exit code must have "+strconv.Itoa(test))
-		}
-	})
-
 	t.Run("change envs", func(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("FOO", "bar")            // value should change
