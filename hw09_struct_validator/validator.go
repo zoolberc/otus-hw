@@ -25,6 +25,7 @@ var (
 	ErrWrongRule        = errors.New("wrong rule")
 	ErrRegexp           = errors.New("value is invalid according to the regular sequence")
 	ErrInternal         = errors.New("internal error")
+	ErrSetValidation    = errors.New("incorrect validation conditions")
 )
 
 func (v ValidationErrors) Error() string {
@@ -53,18 +54,25 @@ func Validate(v interface{}) error {
 		}
 
 		varValue := reflectValue.Field(i).Interface()
-
+		fieldType1 := field
+		fmt.Printf("Этот тип %v\n", fieldType1)
 		if reflectValue.Field(i).Kind() != reflect.Slice {
-			err := validateValue(tag, varValue)
-			if err != nil {
-				vErrors = append(vErrors, ValidationError{Field: name, Err: err})
-			}
-		} else {
-			for _, sliceVal := range varValue.([]string) {
-				err := validateValue(tag, sliceVal)
-				if err != nil {
+			if err := validateValue(tag, varValue); err != nil {
+				if checkError(err) {
 					vErrors = append(vErrors, ValidationError{Field: name, Err: err})
+					continue
 				}
+				return err
+			}
+			continue
+		}
+		for _, sliceVal := range varValue.([]string) {
+			if err := validateValue(tag, sliceVal); err != nil {
+				if checkError(err) {
+					vErrors = append(vErrors, ValidationError{Field: name, Err: err})
+					continue
+				}
+				return err
 			}
 		}
 	}
@@ -109,11 +117,18 @@ func validateValue(tag reflect.StructTag, value interface{}) error {
 			}
 		case "in":
 			inStr := strings.Split(val, ",")
-			if !contains(inStr, fmt.Sprintf("%v", value)) {
+			checkStatus, err := contains(inStr, value)
+			if !checkStatus && err == nil {
 				return ErrIn
 			}
+			if err != nil {
+				return err
+			}
 		case "regexp":
-			matched, _ := regexp.MatchString(val, fmt.Sprintf("%v", value))
+			matched, err := regexp.MatchString(val, fmt.Sprintf("%v", value))
+			if err != nil {
+				return err
+			}
 			if !matched {
 				return ErrRegexp
 			}
@@ -122,11 +137,37 @@ func validateValue(tag reflect.StructTag, value interface{}) error {
 	return nil
 }
 
-func contains(s []string, e string) bool {
+func contains(s []string, e interface{}) (bool, error) {
 	for _, a := range s {
-		if a == e {
-			return true
+		switch reflect.ValueOf(e).Kind() {
+		case reflect.String:
+			if a == fmt.Sprint(e) {
+				return true, nil
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+			v, err := strconv.Atoi(a)
+			if err != nil {
+				return false, ErrSetValidation
+			}
+			if v == e.(int) {
+				return true, nil
+			}
+		default:
 		}
+	}
+	return false, nil
+}
+
+func checkError(err error) bool {
+	if errors.Is(err, ErrLen) ||
+		errors.Is(err, ErrMin) ||
+		errors.Is(err, ErrMax) ||
+		errors.Is(err, ErrIn) ||
+		errors.Is(err, ErrValueIsNotStruct) ||
+		errors.Is(err, ErrWrongRule) ||
+		errors.Is(err, ErrRegexp) ||
+		errors.Is(err, ErrInternal) {
+		return true
 	}
 	return false
 }
