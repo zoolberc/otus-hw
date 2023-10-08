@@ -27,6 +27,9 @@ func ReadDir(dir string) (Environment, error) {
 		if fileInfo.IsDir() {
 			continue
 		}
+		if strings.Contains(fileInfo.Name(), "=") {
+			continue
+		}
 		if fileInfo.Size() == 0 {
 			envMap[fileInfo.Name()] = EnvValue{Value: "", NeedRemove: true}
 		}
@@ -34,9 +37,9 @@ func ReadDir(dir string) (Environment, error) {
 		if err != nil {
 			return nil, err
 		}
-		envMap[strings.TrimRight(fileInfo.Name(), "=")] = EnvValue{
-			validateEnvValue(string(envFile)),
-			fileInfo.Size() == 0,
+		envMap[strings.TrimRight(fileInfo.Name(), " ")] = EnvValue{
+			Value:      validateEnvValue(string(envFile)),
+			NeedRemove: fileInfo.Size() == 0,
 		}
 	}
 	return envMap, nil

@@ -19,7 +19,7 @@ func TestReadDir(t *testing.T) {
 
 	t.Run("Get envs", func(t *testing.T) {
 		envs, err := ReadDir(testDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, expected, envs)
 	})
 
