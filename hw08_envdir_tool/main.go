@@ -1,5 +1,13 @@
 package main
 
+import "os"
+
 func main() {
-	// Place your code here.
+	dir := os.Args[1]
+	command := os.Args[2:]
+	v, e := ReadDir(dir)
+	if e != nil {
+		os.Exit(1)
+	}
+	os.Exit(RunCmd(command, v))
 }
