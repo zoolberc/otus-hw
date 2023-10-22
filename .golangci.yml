@@ -16,6 +16,7 @@ linters-settings:
         allow:
           - $gostd
           - github.com/stretchr
+          - github.com/zoolberc/otus-hw
 
 issues:
   exclude-rules:
