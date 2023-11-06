@@ -24,7 +24,6 @@ version: build
 	$(BIN) version
 
 test:
-	ls -a
 	go test -race ./internal/...
 
 install-lint-deps:
