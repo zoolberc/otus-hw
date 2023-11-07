@@ -2,7 +2,6 @@ package sqlstorage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -38,10 +37,10 @@ func New(dbConnectConfigs DataBaseConf) *EventStorage {
 	}
 }
 
-func (s *EventStorage) Connect(ctx context.Context) error {
+func (s *EventStorage) Connect(ctx context.Context) error { //nolint:revive
 	db, err := sqlx.Open("pgx", getPsqlInfo(s.dbConf))
 	if err != nil {
-		return errors.New(fmt.Sprintf("error connecting to database: %s", err))
+		return fmt.Errorf("error connecting to database: %w", err)
 	}
 	s.db = db
 	return nil

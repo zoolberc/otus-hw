@@ -2,11 +2,12 @@ package internalhttp
 
 import (
 	"context"
-	"github.com/gorilla/mux"
-	"golang.org/x/exp/slog"
 	"io"
 	"net"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	"golang.org/x/exp/slog"
 )
 
 type Server struct {
@@ -36,14 +37,14 @@ func (s *Server) Start(ctx context.Context) error {
 		Handler: s.router,
 		Addr:    serverAdd,
 	}
-	if err := s.srv.ListenAndServe(); err != nil { //nolint:gosec
+	if err := s.srv.ListenAndServe(); err != nil {
 		s.logger.Info("failed to start server")
 	}
 	<-ctx.Done()
 	return nil
 }
 
-func (s *Server) Stop(ctx context.Context) error { //nolint:revive
+func (s *Server) Stop(ctx context.Context) error {
 	return s.srv.Shutdown(ctx)
 }
 

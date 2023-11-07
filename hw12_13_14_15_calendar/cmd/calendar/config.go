@@ -30,12 +30,12 @@ func NewConfig() (Config, error) {
 		return Config{}, errors.New("config file is`t set")
 	}
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		return Config{}, errors.New(fmt.Sprintf("config file does`t exist: %s", configFile))
+		return Config{}, fmt.Errorf("config file does`t exist: %s", configFile)
 	}
 
 	var cfg Config
 	if err := cleanenv.ReadConfig(configFile, &cfg); err != nil {
-		return Config{}, errors.New(fmt.Sprintf("cannot read config: %s", err))
+		return Config{}, err
 	}
 	return cfg, nil
 }
