@@ -1,0 +1,15 @@
+storageType: "memory"
+
+logLevel: "info"
+
+dataBase:
+  host: "localhost"
+  port: "5432"
+  name: "calendar"
+  user: "postgres"
+  password: "postgres"
+
+httpServer:
+  host: ""
+  port: "8080"
+  timeout: "4s"

@@ -7,20 +7,26 @@ import (
 )
 
 var (
-	release   = "UNKNOWN"
+	release = "UNKNOWN"
+
 	buildDate = "UNKNOWN"
-	gitHash   = "UNKNOWN"
+
+	gitHash = "UNKNOWN"
 )
 
 func printVersion() {
 	if err := json.NewEncoder(os.Stdout).Encode(struct {
-		Release   string
+		Release string
+
 		BuildDate string
-		GitHash   string
+
+		GitHash string
 	}{
-		Release:   release,
+		Release: release,
+
 		BuildDate: buildDate,
-		GitHash:   gitHash,
+
+		GitHash: gitHash,
 	}); err != nil {
 		fmt.Printf("error while decode version info: %v\n", err)
 	}

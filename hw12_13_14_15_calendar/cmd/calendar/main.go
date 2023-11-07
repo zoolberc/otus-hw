@@ -3,21 +3,22 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/server/http"
+	st "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage"
+	memorystorage "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
-var configFile string
-
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "configs/config.yaml", "Path to configuration file")
 }
 
 func main() {
@@ -28,13 +29,26 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config, err := NewConfig()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	logfile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
+	if err != nil {
+		log.Println("error when initializing log file: ", err)
+		os.Exit(1)
+	}
+	defer logfile.Close()
 
-	server := internalhttp.NewServer(logg, calendar)
+	log := logger.Setup(config.LogLevel, logfile)
+
+	storage := setStorage(config)
+
+	calendar := app.New(log, storage)
+
+	server := internalhttp.NewServer(log, config.Host, config.Port, calendar)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -47,15 +61,23 @@ func main() {
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+			log.Error("failed to stop http server: " + err.Error())
 		}
+		log.Info("graceful shutdown complete")
 	}()
 
-	logg.Info("calendar is running...")
+	log.Info("calendar is running...")
 
 	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
+		log.Error("failed to start http server: " + err.Error())
 		cancel()
 		os.Exit(1) //nolint:gocritic
 	}
+}
+
+func setStorage(config Config) st.Storage {
+	if config.StorageType == "sql" {
+		return sqlstorage.New(config.DataBaseConf)
+	}
+	return memorystorage.New()
 }

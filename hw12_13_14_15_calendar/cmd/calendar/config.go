@@ -1,20 +1,41 @@
 package main
 
-// При желании конфигурацию можно вынести в internal/config.
-// Организация конфига в main принуждает нас сужать API компонентов, использовать
-// при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
+import (
+	"errors"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	sqlstorage "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
+)
+
+var configFile string
+
 type Config struct {
-	Logger LoggerConf
-	// TODO
+	LogLevel                string `yaml:"logLevel" env-default:"debug"`
+	StorageType             string `yaml:"storageType" env-default:"memory"`
+	HTTPServer              `yaml:"httpServer"`
+	sqlstorage.DataBaseConf `yaml:"dataBase"`
 }
 
-type LoggerConf struct {
-	Level string
-	// TODO
+type HTTPServer struct {
+	Host    string        `yaml:"host" env-default:"localhost"`
+	Port    string        `yaml:"port" env-default:"8080"`
+	Timeout time.Duration `yaml:"timeout" env-default:"4s"`
 }
 
-func NewConfig() Config {
-	return Config{}
-}
+func NewConfig() (Config, error) {
+	if configFile == "" {
+		return Config{}, errors.New("config file is`t set")
+	}
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		return Config{}, fmt.Errorf("config file does`t exist: %s", configFile)
+	}
 
-// TODO
+	var cfg Config
+	if err := cleanenv.ReadConfig(configFile, &cfg); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
+}
