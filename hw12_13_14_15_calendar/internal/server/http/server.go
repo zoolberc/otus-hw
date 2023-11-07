@@ -2,12 +2,11 @@ package internalhttp
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"net/http"
-
 	"github.com/gorilla/mux"
 	"golang.org/x/exp/slog"
+	"io"
+	"net"
+	"net/http"
 )
 
 type Server struct {
@@ -15,10 +14,7 @@ type Server struct {
 	logger *slog.Logger
 	host   string
 	port   string
-}
-
-type Logger interface {
-	// TODO
+	srv    *http.Server
 }
 
 type Application interface { // TODO
@@ -35,18 +31,20 @@ func NewServer(logger *slog.Logger, host, port string, app Application) *Server 
 
 func (s *Server) Start(ctx context.Context) error {
 	s.configureRouter()
-	serverAdd := fmt.Sprintf("%s:%s", s.host, s.port)
-	if err := http.ListenAndServe(serverAdd, s.router); err != nil { //nolint:gosec
+	serverAdd := net.JoinHostPort(s.host, s.port)
+	s.srv = &http.Server{ //nolint:gosec
+		Handler: s.router,
+		Addr:    serverAdd,
+	}
+	if err := s.srv.ListenAndServe(); err != nil { //nolint:gosec
 		s.logger.Info("failed to start server")
 	}
-
 	<-ctx.Done()
 	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error { //nolint:revive
-	// TODO
-	return nil
+	return s.srv.Shutdown(ctx)
 }
 
 func (s *Server) configureRouter() {

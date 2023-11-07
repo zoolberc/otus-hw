@@ -6,7 +6,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func SetupLogger(logLevel string, logFile *os.File) *slog.Logger {
+func Setup(logLevel string, logFile *os.File) *slog.Logger {
 	var log *slog.Logger
 	var slogLevel slog.Level
 

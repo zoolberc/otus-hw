@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -11,10 +11,6 @@ import (
 )
 
 var configFile string
-
-func init() {
-	flag.StringVar(&configFile, "config", "configs/config.yaml", "Path to configuration file")
-}
 
 type Config struct {
 	LogLevel                string `yaml:"logLevel" env-default:"debug"`
@@ -29,17 +25,17 @@ type HTTPServer struct {
 	Timeout time.Duration `yaml:"timeout" env-default:"4s"`
 }
 
-func NewConfig() Config {
+func NewConfig() (Config, error) {
 	if configFile == "" {
-		log.Fatal("Config file is`t set")
+		return Config{}, errors.New("config file is`t set")
 	}
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		log.Fatalf("config file does`t exist: %s", configFile)
+		return Config{}, errors.New(fmt.Sprintf("config file does`t exist: %s", configFile))
 	}
 
 	var cfg Config
 	if err := cleanenv.ReadConfig(configFile, &cfg); err != nil {
-		log.Fatalf("cannot read config: %s", err)
+		return Config{}, errors.New(fmt.Sprintf("cannot read config: %s", err))
 	}
-	return cfg
+	return cfg, nil
 }

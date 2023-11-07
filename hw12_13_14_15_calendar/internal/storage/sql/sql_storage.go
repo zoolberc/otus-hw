@@ -2,6 +2,7 @@ package sqlstorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -28,7 +29,6 @@ type DataBaseConf struct {
 
 type EventStorage struct {
 	db     *sqlx.DB
-	ctx    context.Context
 	dbConf DataBaseConf
 }
 
@@ -41,10 +41,9 @@ func New(dbConnectConfigs DataBaseConf) *EventStorage {
 func (s *EventStorage) Connect(ctx context.Context) error {
 	db, err := sqlx.Open("pgx", getPsqlInfo(s.dbConf))
 	if err != nil {
-		return constants.ErrConnectionToDB
+		return errors.New(fmt.Sprintf("error connecting to database: %s", err))
 	}
 	s.db = db
-	s.ctx = ctx
 	return nil
 }
 
@@ -57,16 +56,19 @@ func (s *EventStorage) Close(ctx context.Context) error { //nolint:revive
 }
 
 func (s *EventStorage) AddEvent(event storage.Event) (string, error) {
+	ctx := context.Background()
 	eventDate, err := utils.ParseDate(event.Date)
 	if err != nil {
 		return "", err
 	}
-	if err = checkEventDate(s.ctx, eventDate, s.db); err != nil {
+	if err = checkEventDate(ctx, eventDate, s.db); err != nil {
 		return "", err
 	}
 
 	event.ID = utils.GenerateUUID()
-	_, err = s.db.ExecContext(s.ctx, constants.AddEventQuery,
+	addEventQuery := `insert into events(id, title, date, duration, description, user_id, reminder) 
+						values($1, $2, $3, $4, $5, $6, $7)`
+	_, err = s.db.ExecContext(ctx, addEventQuery,
 		event.ID, event.Title, event.Date, event.Duration, event.Duration, event.UserID, event.Reminder)
 	if err != nil {
 		return "", err
@@ -75,6 +77,7 @@ func (s *EventStorage) AddEvent(event storage.Event) (string, error) {
 }
 
 func (s *EventStorage) ChangeEvent(eventID string, event storage.Event) error {
+	ctx := context.Background()
 	eventDate, err := utils.ParseDate(event.Date)
 	if err != nil {
 		return err
@@ -82,7 +85,9 @@ func (s *EventStorage) ChangeEvent(eventID string, event storage.Event) error {
 	if eventDate.Before(time.Now()) {
 		return constants.ErrDateBefore
 	}
-	_, err = s.db.ExecContext(s.ctx, constants.ChangeEventQuery,
+	changeEventQuery := `update events set title = $1, date = $2, duration = $3,
+                  		description = $4, user_id = $5, reminder = $6 WHERE Manufacturer = $7`
+	_, err = s.db.ExecContext(ctx, changeEventQuery,
 		event.Title, event.Date, event.Duration, event.Duration, event.UserID, event.Reminder, eventID)
 	if err != nil {
 		return err
@@ -91,7 +96,9 @@ func (s *EventStorage) ChangeEvent(eventID string, event storage.Event) error {
 }
 
 func (s *EventStorage) DeleteEvent(eventID string) error {
-	_, err := s.db.ExecContext(s.ctx, constants.DeleteEventQuery, eventID)
+	ctx := context.Background()
+	deleteEventQuery := `delete from events where id = $1`
+	_, err := s.db.ExecContext(ctx, deleteEventQuery, eventID)
 	if err != nil {
 		return err
 	}
@@ -99,27 +106,30 @@ func (s *EventStorage) DeleteEvent(eventID string) error {
 }
 
 func (s *EventStorage) ListEventsForDay(date string) ([]storage.Event, error) {
+	ctx := context.Background()
 	searchDate, err := utils.ParseDate(date)
 	if err != nil {
 		return nil, err
 	}
-	return searchEventsOverPeriod(s.ctx, searchDate, SearchPeriod{days: 1}, s.db)
+	return searchEventsOverPeriod(ctx, searchDate, SearchPeriod{days: 1}, s.db)
 }
 
 func (s *EventStorage) ListEventsForWeek(date string) ([]storage.Event, error) {
+	ctx := context.Background()
 	searchDate, err := utils.ParseDate(date)
 	if err != nil {
 		return nil, err
 	}
-	return searchEventsOverPeriod(s.ctx, searchDate, SearchPeriod{days: 7}, s.db)
+	return searchEventsOverPeriod(ctx, searchDate, SearchPeriod{days: 7}, s.db)
 }
 
 func (s *EventStorage) ListEventsForMonth(date string) ([]storage.Event, error) {
+	ctx := context.Background()
 	searchDate, err := utils.ParseDate(date)
 	if err != nil {
 		return nil, err
 	}
-	return searchEventsOverPeriod(s.ctx, searchDate, SearchPeriod{months: 7}, s.db)
+	return searchEventsOverPeriod(ctx, searchDate, SearchPeriod{months: 7}, s.db)
 }
 
 func searchEventsOverPeriod(
@@ -129,7 +139,8 @@ func searchEventsOverPeriod(
 	db *sqlx.DB,
 ) ([]storage.Event, error) {
 	eventList := make([]storage.Event, 0)
-	rows, err := db.QueryContext(ctx, constants.GetEventsOverPeriodQuery, startDate.Format("2006-01-02"),
+	getEventsOverPeriodQuery := `select * from events where "date" >= $1 and "date" < $2`
+	rows, err := db.QueryContext(ctx, getEventsOverPeriodQuery, startDate.Format("2006-01-02"),
 		startDate.AddDate(period.years, period.months, period.days).Format("2006-01-02"))
 	if err != nil {
 		return nil, err
@@ -152,7 +163,8 @@ func checkEventDate(ctx context.Context, date time.Time, db *sqlx.DB) error {
 	if date.Before(time.Now()) {
 		return constants.ErrDateBefore
 	}
-	rows, err := db.QueryContext(ctx, constants.CheckCountEventOnDateQuery, date)
+	checkCountEventOnDateQuery := `select id from events where "date" == $1`
+	rows, err := db.QueryContext(ctx, checkCountEventOnDateQuery, date)
 	if err != nil {
 		return err
 	}

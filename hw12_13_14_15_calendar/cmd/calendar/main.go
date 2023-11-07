@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,9 +12,14 @@ import (
 	"github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/server/http"
+	st "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/zoolberc/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
+
+func init() {
+	flag.StringVar(&configFile, "config", "configs/config.yaml", "Path to configuration file")
+}
 
 func main() {
 	flag.Parse()
@@ -23,15 +29,20 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
+	config, err := NewConfig()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
 
 	logfile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
-		panic(err)
+		log.Println("error when initializing log file: ", err)
+		os.Exit(1)
 	}
 	defer logfile.Close()
 
-	log := logger.SetupLogger(config.LogLevel, logfile)
+	log := logger.Setup(config.LogLevel, logfile)
 
 	storage := setStorage(config)
 
@@ -52,6 +63,7 @@ func main() {
 		if err := server.Stop(ctx); err != nil {
 			log.Error("failed to stop http server: " + err.Error())
 		}
+		log.Info("graceful shutdown complete")
 	}()
 
 	log.Info("calendar is running...")
@@ -63,7 +75,7 @@ func main() {
 	}
 }
 
-func setStorage(config Config) any {
+func setStorage(config Config) st.Storage {
 	if config.StorageType == "sql" {
 		return sqlstorage.New(config.DataBaseConf)
 	}
